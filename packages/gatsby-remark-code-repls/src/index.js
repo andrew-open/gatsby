@@ -19,23 +19,16 @@ const compress = string =>
     .replace(/\//g, `_`) // Convert '/' to '_'
     .replace(/=+$/, ``) // Remove ending '='
 
-function createLinkNodes(text, href, target) {
+function convertNodeToLink(node, text, href, target) {
   target = target ? `target="${target}" rel="noreferrer"` : ``
 
-  return [
-    {
-      type: `html`,
-      value: `<a href="${href}" ${target}>`,
-    },
-    {
-      type: `text`,
-      value: text,
-    },
-    {
-      type: `html`,
-      value: `</a>`,
-    },
-  ]
+  delete node.children
+  delete node.position
+  delete node.title
+  delete node.url
+
+  node.type = `html`
+  node.value = `<a href="${href}" ${target}>${text}</a>`
 }
 
 module.exports = ({ markdownAST }, { defaultText = OPTION_DEFAULT_LINK_TEXT, directory, target } = {}) => {
@@ -73,11 +66,7 @@ module.exports = ({ markdownAST }, { defaultText = OPTION_DEFAULT_LINK_TEXT, dir
         const href = `https://babeljs.io/repl/#?presets=react&code_lz=${code}`
         const text = node.children.length === 0 ? defaultText : node.children[0].value
 
-        parent.children.splice(
-          index,
-          1,
-          ...createLinkNodes(text, href, target),
-        )
+        convertNodeToLink(node, text, href, target)
       } else if (node.url.startsWith(PROTOCOL_CODEPEN)) {
         const filePath = getFilePath(node.url, PROTOCOL_CODEPEN, directory)
 
@@ -86,11 +75,7 @@ module.exports = ({ markdownAST }, { defaultText = OPTION_DEFAULT_LINK_TEXT, dir
         const href = node.url.replace(PROTOCOL_CODEPEN, `/redirect-to-codepen/`)
         const text = node.children.length === 0 ? defaultText : node.children[0].value
 
-        parent.children.splice(
-          index,
-          1,
-          ...createLinkNodes(text, href, target),
-        )
+        convertNodeToLink(node, text, href, target)
       }
     }
 
